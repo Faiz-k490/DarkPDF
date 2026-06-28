@@ -49,3 +49,22 @@ furnished to do so, subject to the above copyright notice and this permission
 notice being included. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
 ANY KIND.
 ```
+
+---
+
+## Fraunces (font)
+
+- **File:** `vendor/fonts/fraunces.woff2`
+- **Project:** https://github.com/undercasetype/Fraunces
+- **Copyright:** © The Fraunces Project Authors
+- **License:** SIL Open Font License 1.1 — https://openfontlicense.org
+
+## JetBrains Mono (font)
+
+- **File:** `vendor/fonts/jetbrains-mono.woff2`
+- **Project:** https://github.com/JetBrains/JetBrainsMono
+- **Copyright:** © 2020 The JetBrains Mono Project Authors
+- **License:** SIL Open Font License 1.1 — https://openfontlicense.org
+
+> The SIL Open Font License permits bundling and redistribution of these font
+> files. They are not sold, and are bundled solely so the tool works offline.

@@ -9,7 +9,7 @@ Great for reading ebooks, papers, and textbooks at night without burning your ey
 > [pdf.js](https://mozilla.github.io/pdf.js/) and [pdf-lib](https://pdf-lib.js.org/). You can
 > disconnect from the internet entirely and it still works.
 
-![Before and after: a PDF page converted to pure-black dark mode](docs/before-after.png)
+![DarkPDF interface: drop a PDF, pick a dark theme, with a live before/after preview](docs/screenshot.png)
 
 ## Features
 
@@ -70,10 +70,11 @@ Because the output is image-based, it works on **any** PDF, but the text is no l
 ```
 DarkPDF/
 ├── index.html              # The entire app (UI + conversion logic)
-├── vendor/                 # Bundled libraries for offline use
+├── vendor/                 # Bundled dependencies for offline use
 │   ├── pdf.min.js          # pdf.js          (Apache-2.0)
 │   ├── pdf.worker.min.js   # pdf.js worker   (Apache-2.0)
-│   └── pdf-lib.min.js      # pdf-lib         (MIT)
+│   ├── pdf-lib.min.js      # pdf-lib         (MIT)
+│   └── fonts/              # Fraunces + JetBrains Mono (OFL) — even type is local
 ├── docs/                   # Screenshots / extra docs
 ├── README.md
 ├── LICENSE                 # MIT
