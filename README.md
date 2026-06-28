@@ -9,6 +9,8 @@ Great for reading ebooks, papers, and textbooks at night without burning your ey
 > [pdf.js](https://mozilla.github.io/pdf.js/) and [pdf-lib](https://pdf-lib.js.org/). You can
 > disconnect from the internet entirely and it still works.
 
+![Before and after: a PDF page converted to pure-black dark mode](docs/before-after.png)
+
 ## Features
 
 - **Fully offline** — libraries are vendored in `vendor/`, nothing is fetched at runtime.
