@@ -22,15 +22,17 @@ Great for reading ebooks, papers, and textbooks at night without burning your ey
 - **Works on any PDF** — scanned, vector, or complex layouts (each page is recolored as an image).
 - **Tuned for ebooks** — pages are embedded as JPEG to keep output files reasonably small.
 - **Quality picker** — choose Compact / Balanced / Sharpest to trade detail against file size.
-- **Live preview** — see the first 20 pages as they convert.
+- **Instant preview** — the first 10 pages render immediately so you can check the look before committing.
+- **Generate on demand** — the full document is only processed when you click **Generate**, so large PDFs never grind in the background.
 - **Drag & drop** or file picker.
 
 ## Usage
 
 1. Open `index.html` in your browser (double-click works in **Safari** and **Firefox**).
 2. Pick a theme (defaults to **Pure Black**).
-3. Drag a PDF onto the page, or click **Choose PDF File**.
-4. The converted PDF downloads automatically as `<name>_<theme>_dark.pdf`.
+3. Drag a PDF onto the page, or click **Choose a PDF**.
+4. Review the live preview (first 10 pages), then click **Generate full dark PDF**.
+5. The converted PDF downloads as `<name>_<theme>_dark.pdf`.
 
 ### Chrome note
 

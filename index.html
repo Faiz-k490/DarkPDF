@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DarkPDF — read any PDF after dark</title>
     <meta name="description" content="Convert any PDF to a warm, eye-easy dark mode entirely in your browser. Fully offline, private, open source.">
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2315120e'/%3E%3Cpath d='M16 6a10 10 0 1 0 0 20z' fill='%23ece3d2'/%3E%3Cpath d='M16 6a10 10 0 1 1 0 20z' fill='%23241f18'/%3E%3Ccircle cx='16' cy='16' r='10' fill='none' stroke='%23e9a23b' stroke-width='1.5'/%3E%3C/svg%3E">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%230E0E0E'/%3E%3Crect x='2.5' y='2.5' width='27' height='27' rx='3' fill='none' stroke='%23FFB000' stroke-width='2'/%3E%3Cpath d='M16 7a9 9 0 1 0 0 18z' fill='%23FFB000'/%3E%3C/svg%3E">
 
     <script type="application/ld+json">
     {
@@ -22,13 +22,6 @@
 
     <style>
         @font-face {
-            font-family: 'Fraunces';
-            src: url('./vendor/fonts/fraunces.woff2') format('woff2');
-            font-weight: 400 600;
-            font-display: swap;
-            font-style: normal;
-        }
-        @font-face {
             font-family: 'JetBrains Mono';
             src: url('./vendor/fonts/jetbrains-mono.woff2') format('woff2');
             font-weight: 400 500;
@@ -37,30 +30,28 @@
         }
 
         :root {
-            --ink:      #15120e;   /* warm near-black page */
-            --ink-2:    #1c1813;   /* raised surface */
-            --ink-3:    #241f18;   /* inputs / chips */
-            --paper:    #ece3d2;   /* warm paper-white text */
-            --paper-2:  #cbc1ae;   /* secondary text */
-            --muted:    #948a7b;   /* captions / meta */
-            --line:     rgba(236, 227, 210, 0.10);
-            --line-2:   rgba(236, 227, 210, 0.18);
-            --lamp:     #e9a23b;   /* amber lamplight accent */
-            --lamp-2:   #f3c178;   /* lighter amber */
-            --lamp-dim: rgba(233, 162, 59, 0.14);
-
-            --sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
-            --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+            --bg:      #0E0E0E;
+            --bg-2:    #131313;
+            --panel:   #050505;
+            --paper:   #e8e2da;   /* body text */
+            --muted:   #C9B79C;   /* secondary text */
+            --amber:   #FFB000;
+            --yellow:  #ffe600;
+            --blue:    #00d4ff;
+            --green:   #39ff14;
+            --pink:    #ff2d7b;
+            --line:    rgba(255, 176, 0, 0.25);
+            --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
         }
 
         * { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; }
         body {
-            font-family: var(--sans);
-            background-color: var(--ink);
-            /* faint lamplight glow from upper-left */
-            background-image: radial-gradient(900px 600px at 12% -8%, rgba(233, 162, 59, 0.10), transparent 60%);
+            font-family: var(--mono);
+            background-color: var(--bg-2);
+            background-image:
+                radial-gradient(900px 600px at 12% -8%, rgba(255, 176, 0, 0.07), transparent 60%),
+                radial-gradient(700px 500px at 92% 0%, rgba(0, 212, 255, 0.05), transparent 60%);
             background-attachment: fixed;
             color: var(--paper);
             line-height: 1.5;
@@ -68,178 +59,251 @@
             min-height: 100vh;
         }
         a { color: inherit; }
-        ::selection { background: var(--lamp); color: var(--ink); }
+        ::selection { background: var(--amber); color: #1a0e00; }
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 176, 0, 0.4); border-radius: 0; }
 
-        .wrap { max-width: 1120px; margin: 0 auto; padding: 0 28px; }
+        /* CRT scanline overlay — subtle, matches portfolio */
+        .scanlines {
+            position: fixed; inset: 0; z-index: 200; pointer-events: none;
+            background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.10) 50%);
+            background-size: 100% 5px;
+            opacity: 0.5;
+            mix-blend-mode: multiply;
+        }
+        .vignette {
+            position: fixed; inset: 0; z-index: 201; pointer-events: none;
+            box-shadow: inset 0 0 120px rgba(0,0,0,0.6), inset 0 0 24px rgba(255,176,0,0.05);
+        }
+
+        .glow { text-shadow: 0 0 8px rgba(255, 176, 0, 0.45); }
+        .glow-blue { text-shadow: 0 0 10px rgba(0, 212, 255, 0.6); }
+
+        .wrap { max-width: 1120px; margin: 0 auto; padding: 0 28px; position: relative; z-index: 2; }
+
+        .kicker {
+            color: var(--blue); font-size: 0.68rem; font-weight: 700;
+            letter-spacing: 0.24em; text-transform: uppercase;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .kicker::before { content: ""; width: 26px; height: 2px; background: var(--blue); }
 
         /* ---- top bar ---- */
         .topbar {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 22px 0; border-bottom: 1px solid var(--line);
+            padding: 16px 0; border-bottom: 2px solid var(--line);
+            position: sticky; top: 0; background: var(--bg); z-index: 50;
         }
-        .brand { display: flex; align-items: center; gap: 11px; font-family: var(--serif); font-size: 1.28rem; font-weight: 600; letter-spacing: -0.01em; }
+        .brand {
+            display: flex; align-items: center; gap: 11px;
+            font-size: 1.2rem; font-weight: 700; letter-spacing: 0.06em;
+            color: var(--amber); text-transform: uppercase;
+        }
         .brand .mark {
-            width: 22px; height: 22px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--paper) 0 50%, var(--ink-3) 50% 100%);
-            border: 1px solid var(--line-2);
-            box-shadow: 0 0 18px var(--lamp-dim);
+            width: 22px; height: 22px; border: 2px solid var(--amber);
+            background: linear-gradient(135deg, var(--amber) 0 50%, var(--bg) 50% 100%);
+            box-shadow: 3px 3px 0 0 var(--amber);
         }
-        .topbar nav { display: flex; align-items: center; gap: 22px; font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.04em; }
-        .topbar nav a { color: var(--muted); text-decoration: none; transition: color 0.15s; }
-        .topbar nav a:hover { color: var(--paper); }
-        .topbar nav a.gh { color: var(--paper-2); }
+        .topbar nav { display: flex; align-items: center; gap: 8px; font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; }
+        .topbar nav a {
+            color: var(--muted); text-decoration: none; padding: 7px 11px;
+            border: 1px solid transparent; transition: all 0.12s;
+        }
+        .topbar nav a:hover { color: var(--bg); background: var(--amber); }
+        .topbar nav a.home { color: var(--blue); border-color: var(--blue); box-shadow: 3px 3px 0 0 var(--blue); }
+        .topbar nav a.home:hover { color: var(--bg); background: var(--blue); box-shadow: 1px 1px 0 0 var(--blue); transform: translate(2px,2px); }
 
         /* ---- hero ---- */
         .hero {
-            display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px;
-            align-items: center; padding: 72px 0 60px;
+            display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px;
+            align-items: center; padding: 60px 0 52px;
         }
-        .eyebrow {
-            font-family: var(--mono); font-size: 0.72rem; font-weight: 500;
-            letter-spacing: 0.28em; text-transform: uppercase; color: var(--lamp);
-            display: flex; align-items: center; gap: 12px; margin-bottom: 26px;
-        }
-        .eyebrow::before { content: ""; width: 26px; height: 1px; background: var(--lamp); opacity: 0.7; }
         h1 {
-            font-family: var(--serif); font-weight: 600;
-            font-size: clamp(2.6rem, 6.2vw, 4.5rem); line-height: 0.98;
-            letter-spacing: -0.025em; margin: 0 0 22px;
+            font-weight: 800; font-size: clamp(2.4rem, 6vw, 4.2rem); line-height: 0.98;
+            letter-spacing: -0.01em; margin: 22px 0; color: var(--amber); text-transform: uppercase;
         }
-        h1 .em { font-style: italic; color: var(--lamp-2); }
-        .lede { font-size: 1.12rem; color: var(--paper-2); max-width: 30ch; margin: 0 0 34px; }
+        h1 .em { color: var(--yellow); }
+        .lede { font-size: 1rem; color: var(--muted); max-width: 36ch; margin: 0 0 30px; line-height: 1.6; }
 
+        /* ---- neobrutalist primitives ---- */
+        .neo-card {
+            border: 3px solid var(--amber); background: var(--bg);
+            box-shadow: 6px 6px 0 0 var(--amber);
+        }
         .actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
         .file-input { display: none; }
         .btn-primary {
             display: inline-flex; align-items: center; gap: 10px;
-            padding: 14px 24px; border-radius: 10px; cursor: pointer;
-            background: var(--lamp); color: #211606; border: 1px solid var(--lamp);
-            font-family: var(--sans); font-size: 1rem; font-weight: 600;
-            box-shadow: 0 8px 30px -10px rgba(233, 162, 59, 0.6);
-            transition: transform 0.12s ease, box-shadow 0.2s ease, background 0.15s;
+            padding: 14px 24px; cursor: pointer;
+            background: var(--amber); color: #1a0e00; border: 3px solid var(--amber);
+            font-family: var(--mono); font-size: 0.92rem; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            box-shadow: 5px 5px 0 0 var(--yellow);
+            transition: transform 0.12s ease, box-shadow 0.15s ease;
         }
-        .btn-primary:hover { background: var(--lamp-2); transform: translateY(-1px); box-shadow: 0 12px 34px -10px rgba(233, 162, 59, 0.7); }
-        .btn-primary:focus-visible { outline: 3px solid var(--lamp-2); outline-offset: 3px; }
+        .btn-primary:hover { transform: translate(2px, 2px); box-shadow: 2px 2px 0 0 var(--yellow); }
+        .btn-primary:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
         .btn-primary svg { width: 18px; height: 18px; }
-        .or-drop { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); }
+        .or-drop { font-size: 0.74rem; color: var(--muted); letter-spacing: 0.05em; }
 
         /* ---- theme chips ---- */
-        .themes { margin-top: 38px; }
-        .themes .label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+        .themes { margin-top: 34px; }
+        .label { font-size: 0.64rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
         .chips { display: flex; flex-wrap: wrap; gap: 9px; }
         .chip {
             display: inline-flex; align-items: center; gap: 9px;
-            padding: 8px 14px 8px 11px; border-radius: 999px; cursor: pointer;
-            background: var(--ink-2); border: 1px solid var(--line-2); color: var(--paper-2);
-            font-family: var(--mono); font-size: 0.78rem; transition: border-color 0.15s, color 0.15s, background 0.15s;
+            padding: 7px 13px; cursor: pointer;
+            background: var(--bg); border: 2px solid var(--line); color: var(--muted);
+            font-family: var(--mono); font-size: 0.74rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.06em;
+            box-shadow: 3px 3px 0 0 rgba(255,176,0,0.25);
+            transition: all 0.13s;
         }
-        .chip:hover { border-color: var(--muted); color: var(--paper); }
-        .chip .dot { width: 13px; height: 13px; border-radius: 50%; border: 1px solid var(--line-2); }
+        .chip:hover { color: var(--amber); border-color: var(--amber); }
+        .chip .dot { width: 13px; height: 13px; border: 1px solid rgba(255,255,255,0.25); }
         .chip[aria-pressed="true"] {
-            border-color: var(--lamp); color: var(--paper); background: var(--lamp-dim);
+            border-color: var(--amber); color: var(--bg); background: var(--amber);
+            box-shadow: 3px 3px 0 0 var(--yellow);
         }
-        .chip:focus-visible { outline: 2px solid var(--lamp-2); outline-offset: 2px; }
+        .chip:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
         .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
         /* ---- quality segmented control ---- */
-        .quality { margin-top: 26px; }
+        .quality { margin-top: 24px; }
         .quality .hint { color: var(--muted); text-transform: none; letter-spacing: 0; }
-        .seg { display: inline-flex; max-width: 100%; background: var(--ink-2); border: 1px solid var(--line-2); border-radius: 12px; padding: 4px; gap: 4px; }
+        .seg { display: inline-flex; max-width: 100%; background: var(--bg); border: 2px solid var(--line); padding: 4px; gap: 4px; box-shadow: 4px 4px 0 0 rgba(255,176,0,0.25); }
         .seg-btn {
             display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-            padding: 9px 16px; border-radius: 9px; cursor: pointer; border: 0;
-            background: transparent; color: var(--paper-2); text-align: left; font-family: var(--sans);
-            transition: background 0.15s, color 0.15s;
+            padding: 9px 15px; cursor: pointer; border: 0;
+            background: transparent; color: var(--muted); text-align: left; font-family: var(--mono);
+            transition: background 0.13s, color 0.13s;
         }
-        .seg-btn b { font-weight: 600; font-size: 0.86rem; }
-        .seg-btn span { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); white-space: nowrap; }
-        .seg-btn:hover { color: var(--paper); }
-        .seg-btn[aria-pressed="true"] { background: var(--lamp); color: #211606; }
-        .seg-btn[aria-pressed="true"] span { color: rgba(33, 22, 6, 0.7); }
-        .seg-btn:focus-visible { outline: 2px solid var(--lamp-2); outline-offset: 2px; }
+        .seg-btn b { font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; }
+        .seg-btn span { font-size: 0.56rem; color: var(--muted); white-space: nowrap; }
+        .seg-btn:hover { color: var(--amber); }
+        .seg-btn[aria-pressed="true"] { background: var(--amber); color: #1a0e00; }
+        .seg-btn[aria-pressed="true"] span { color: rgba(26, 14, 0, 0.7); }
+        .seg-btn:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
 
         /* ---- signature: before/after specimen ---- */
         .specimen {
             position: relative; width: 100%; aspect-ratio: 5 / 6;
-            border-radius: 14px; overflow: hidden; user-select: none;
-            border: 1px solid var(--line-2);
-            box-shadow: 0 40px 80px -40px rgba(0,0,0,0.8), 0 0 0 1px rgba(0,0,0,0.3);
+            overflow: hidden; user-select: none;
+            border: 3px solid var(--amber);
+            box-shadow: 8px 8px 0 0 var(--amber);
             --seam: 50%;
         }
         .specimen .leaf { position: absolute; inset: 0; padding: 13% 12%; }
-        .specimen .leaf .kicker { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.6; }
-        .specimen .leaf h3 { font-family: var(--serif); font-weight: 600; font-size: clamp(1rem, 2.6vw, 1.5rem); line-height: 1.1; margin: 10px 0 16px; letter-spacing: -0.02em; }
-        .specimen .leaf .row { height: 7px; border-radius: 4px; margin-bottom: 9px; opacity: 0.85; }
+        .specimen .leaf .kicker-mini { font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.7; }
+        .specimen .leaf h3 { font-weight: 700; font-size: clamp(1rem, 2.6vw, 1.45rem); line-height: 1.1; margin: 10px 0 16px; letter-spacing: -0.01em; }
+        .specimen .leaf .row { height: 7px; margin-bottom: 9px; opacity: 0.85; }
         .specimen .leaf .fig { margin-top: 20px; display: flex; align-items: center; gap: 12px; }
-        .specimen .leaf .fig .box { width: 46px; height: 30px; border-radius: 4px; border: 1.5px solid currentColor; }
+        .specimen .leaf .fig .box { width: 46px; height: 30px; border: 1.5px solid currentColor; }
         .specimen .leaf .fig .arrow { flex: 1; height: 1.5px; background: currentColor; opacity: 0.7; }
         .specimen .leaf .fig .circ { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid currentColor; }
 
-        /* light leaf = original paper */
         .specimen .light { background: #f6f1e6; color: #211d16; }
         .specimen .light .row { background: #211d16; }
-        /* dark leaf = converted, clipped to the right of the seam */
-        .specimen .dark { background: var(--ink); color: var(--paper); clip-path: inset(0 0 0 var(--seam)); }
+        .specimen .dark { background: var(--bg); color: var(--paper); clip-path: inset(0 0 0 var(--seam)); }
         .specimen .dark .row { background: var(--paper); }
-        .specimen .dark .fig .box, .specimen .dark .fig .circ { color: var(--lamp-2); }
+        .specimen .dark .fig .box, .specimen .dark .fig .circ { color: var(--amber); }
 
-        .seam { position: absolute; top: 0; bottom: 0; left: var(--seam); width: 2px; background: var(--lamp); box-shadow: 0 0 16px var(--lamp); transform: translateX(-1px); }
+        .seam { position: absolute; top: 0; bottom: 0; left: var(--seam); width: 2px; background: var(--amber); box-shadow: 0 0 16px var(--amber); transform: translateX(-1px); }
         .handle {
             position: absolute; top: 50%; left: var(--seam);
-            width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%;
-            background: var(--ink-2); border: 2px solid var(--lamp); cursor: ew-resize;
-            display: grid; place-items: center; color: var(--lamp);
-            box-shadow: 0 6px 20px -6px rgba(0,0,0,0.7); touch-action: none;
+            width: 40px; height: 40px; margin: -20px 0 0 -20px;
+            background: var(--bg); border: 3px solid var(--amber); cursor: ew-resize;
+            display: grid; place-items: center; color: var(--amber);
+            box-shadow: 4px 4px 0 0 var(--amber); touch-action: none;
         }
-        .handle:focus-visible { outline: 3px solid var(--lamp-2); outline-offset: 3px; }
+        .handle:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
         .handle svg { width: 18px; height: 18px; }
         .specimen .tag {
-            position: absolute; bottom: 12px; font-family: var(--mono); font-size: 0.6rem;
-            letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 8px; border-radius: 5px;
+            position: absolute; bottom: 12px; font-size: 0.56rem;
+            letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 8px; font-weight: 700;
         }
-        .specimen .tag.before { left: 12px; background: rgba(33,29,22,0.7); color: #f6f1e6; }
-        .specimen .tag.after  { right: 12px; background: var(--lamp); color: var(--ink); }
+        .specimen .tag.before { left: 12px; background: rgba(33,29,22,0.8); color: #f6f1e6; }
+        .specimen .tag.after  { right: 12px; background: var(--amber); color: var(--bg); }
 
         /* ---- reassurance strip ---- */
-        .assure { display: flex; flex-wrap: wrap; gap: 26px; padding: 26px 0 64px; border-top: 1px solid var(--line); }
-        .assure .item { display: flex; gap: 12px; align-items: flex-start; max-width: 30ch; }
-        .assure .item svg { width: 19px; height: 19px; color: var(--lamp); flex: none; margin-top: 2px; }
-        .assure .item b { font-weight: 600; font-size: 0.95rem; }
-        .assure .item p { margin: 3px 0 0; font-size: 0.85rem; color: var(--muted); font-family: var(--mono); line-height: 1.45; }
+        .assure { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; padding: 8px 0 60px; }
+        .assure .item { padding: 18px; }
+        .assure .item .ico { display: flex; align-items: center; gap: 10px; color: var(--amber); margin-bottom: 10px; }
+        .assure .item .ico svg { width: 19px; height: 19px; }
+        .assure .item b { font-weight: 700; font-size: 0.86rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--amber); }
+        .assure .item p { margin: 0; font-size: 0.78rem; color: var(--muted); line-height: 1.5; }
 
-        /* ---- progress + preview ---- */
+        /* ---- stage: preview + progress + download ---- */
         #stage { padding-bottom: 80px; }
-        #progressContainer { display: none; max-width: 560px; margin: 0 auto 26px; background: var(--ink-2); border: 1px solid var(--line-2); border-radius: 12px; padding: 18px 20px; }
-        .track { height: 8px; background: var(--ink-3); border-radius: 99px; overflow: hidden; }
-        #progressBar { height: 100%; width: 0; background: linear-gradient(90deg, var(--lamp), var(--lamp-2)); border-radius: 99px; transition: width 0.3s ease; }
-        #progressText { margin-top: 11px; font-family: var(--mono); font-size: 0.82rem; color: var(--paper-2); text-align: center; }
-        #downloadBtn {
-            display: none; margin: 0 auto 30px; padding: 12px 22px; border-radius: 10px; cursor: pointer;
-            background: transparent; color: var(--lamp); border: 1px solid var(--lamp);
-            font-family: var(--sans); font-size: 0.95rem; font-weight: 600;
+        #previewHead {
+            display: none; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+            max-width: 100%; margin: 0 auto 24px; padding: 18px 20px;
+            border: 3px solid var(--amber); background: var(--bg); box-shadow: 6px 6px 0 0 var(--amber);
         }
-        #downloadBtn:hover { background: var(--lamp-dim); }
-        #downloadBtn:focus-visible { outline: 3px solid var(--lamp-2); outline-offset: 3px; }
-        #pdfContainer { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
-        #pdfContainer canvas { width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line-2); box-shadow: 0 16px 30px -20px rgba(0,0,0,0.8); }
+        #previewHead .meta .ttl { font-size: 0.66rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--blue); font-weight: 700; }
+        #previewNote { font-size: 1rem; font-weight: 700; color: var(--paper); margin-top: 4px; }
+        #previewHint { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+        .gen-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+        #generateBtn {
+            display: none; align-items: center; gap: 10px;
+            padding: 14px 22px; cursor: pointer;
+            background: var(--amber); color: #1a0e00; border: 3px solid var(--amber);
+            font-family: var(--mono); font-size: 0.9rem; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            box-shadow: 5px 5px 0 0 var(--yellow); transition: all 0.13s ease;
+        }
+        #generateBtn:hover:not(:disabled) { transform: translate(2px,2px); box-shadow: 2px 2px 0 0 var(--yellow); }
+        #generateBtn:disabled { opacity: 0.5; cursor: progress; }
+        #generateBtn:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
 
-        footer { border-top: 1px solid var(--line); padding: 30px 0 44px; font-family: var(--mono); font-size: 0.74rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: space-between; }
-        footer a { color: var(--paper-2); text-decoration: none; }
-        footer a:hover { color: var(--lamp); }
+        #progressContainer { display: none; max-width: 560px; margin: 0 auto 22px; background: var(--bg); border: 3px solid var(--amber); box-shadow: 6px 6px 0 0 var(--amber); padding: 18px 20px; }
+        .track { height: 14px; background: var(--panel); border: 2px solid var(--amber); padding: 2px; }
+        #progressBar {
+            height: 100%; width: 0;
+            background: repeating-linear-gradient(90deg, var(--amber) 0 12px, var(--yellow) 12px 18px, var(--amber) 18px 24px);
+            box-shadow: 0 0 14px rgba(255,176,0,0.55);
+            transition: width 0.25s ease;
+        }
+        #progressText { margin-top: 11px; font-size: 0.78rem; color: var(--paper); text-align: center; letter-spacing: 0.05em; }
+        #downloadBtn {
+            display: none; align-items: center; gap: 10px;
+            margin: 0 auto 28px; padding: 12px 22px; cursor: pointer;
+            background: var(--bg); color: var(--green); border: 3px solid var(--green);
+            font-family: var(--mono); font-size: 0.88rem; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            box-shadow: 5px 5px 0 0 var(--green); transition: all 0.13s ease;
+        }
+        #downloadBtn:hover { transform: translate(2px,2px); box-shadow: 2px 2px 0 0 var(--green); background: var(--green); color: var(--bg); }
+        #downloadBtn:focus-visible { outline: 3px solid var(--green); outline-offset: 3px; }
+        #pdfContainer { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+        #pdfContainer canvas { width: 100%; height: auto; border: 2px solid var(--line); box-shadow: 4px 4px 0 0 rgba(255,176,0,0.2); background: var(--bg); }
 
-        body.dropping { outline: 2px dashed var(--lamp); outline-offset: -12px; }
+        footer {
+            border-top: 2px solid var(--line); padding: 26px 0 44px; font-size: 0.7rem;
+            color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: space-between;
+            letter-spacing: 0.05em;
+        }
+        footer a { color: var(--amber); text-decoration: none; }
+        footer a:hover { color: var(--yellow); }
+
+        body.dropping { outline: 3px dashed var(--amber); outline-offset: -12px; }
 
         @media (max-width: 860px) {
-            .hero { grid-template-columns: 1fr; gap: 40px; padding: 48px 0 44px; }
+            .hero { grid-template-columns: 1fr; gap: 36px; padding: 40px 0 40px; }
             .specimen { max-width: 420px; }
+            .assure { grid-template-columns: 1fr; }
         }
         @media (max-width: 520px) {
-            .wrap { padding: 0 18px; }
-            .topbar nav { gap: 14px; }
+            .wrap { padding: 0 16px; }
+            .topbar nav { gap: 6px; }
+            .topbar nav a { padding: 6px 8px; }
             .actions { width: 100%; }
             .btn-primary { width: 100%; justify-content: center; }
             .seg { width: 100%; }
-            .seg-btn { flex: 1; align-items: center; text-align: center; padding: 9px 8px; }
+            .seg-btn { flex: 1; align-items: center; text-align: center; padding: 9px 6px; }
+            #previewHead { flex-direction: column; align-items: stretch; }
+            .gen-wrap { align-items: stretch; }
+            #generateBtn { justify-content: center; }
         }
         @media (prefers-reduced-motion: reduce) {
             * { transition: none !important; }
@@ -247,21 +311,25 @@
     </style>
 </head>
 <body>
+    <div class="scanlines" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+
     <div class="wrap">
         <header class="topbar">
             <div class="brand"><span class="mark" aria-hidden="true"></span> DarkPDF</div>
             <nav>
                 <a href="#how">How it works</a>
-                <a href="https://github.com/Chizkiyahu/pdf-dark-mode-converter" class="gh" rel="noopener">GitHub ↗</a>
+                <a href="https://github.com/Faiz-k490/DarkPDF" rel="noopener" target="_blank">Repo &#8599;</a>
+                <a href="/" class="home">&#8592; faizank.me</a>
             </nav>
         </header>
 
         <main>
             <section class="hero">
                 <div class="hero-copy">
-                    <div class="eyebrow">Offline · On-device · MIT</div>
+                    <div class="kicker">Offline &middot; On-device &middot; Private</div>
                     <h1>Read any&nbsp;PDF<br><span class="em">after dark.</span></h1>
-                    <p class="lede">Recolor any PDF for comfortable low-light reading — right in your browser. Your file never leaves your device.</p>
+                    <p class="lede">Recolor any PDF for comfortable low-light reading &mdash; right in your browser. Your file never leaves your device.</p>
 
                     <div class="actions">
                         <label for="fileInput" class="btn-primary">
@@ -286,7 +354,7 @@
                     </div>
 
                     <div class="quality">
-                        <div class="label">Quality <span class="hint">— detail vs. file size</span></div>
+                        <div class="label">Quality <span class="hint">&mdash; detail vs. file size</span></div>
                         <div class="seg" id="quality" role="group" aria-label="Render quality">
                             <button type="button" class="seg-btn" data-scale="1.5"><b>Compact</b><span>~108 ppi · small</span></button>
                             <button type="button" class="seg-btn" data-scale="2"><b>Balanced</b><span>~144 ppi</span></button>
@@ -298,7 +366,7 @@
                 <div class="hero-demo">
                     <div class="specimen" id="specimen">
                         <div class="leaf light" aria-hidden="true">
-                            <div class="kicker">Chapter 3</div>
+                            <div class="kicker-mini">Chapter 3</div>
                             <h3>The theory of dark reading</h3>
                             <div class="row" style="width:96%"></div>
                             <div class="row" style="width:88%"></div>
@@ -307,7 +375,7 @@
                             <div class="fig"><span class="box"></span><span class="arrow"></span><span class="circ"></span></div>
                         </div>
                         <div class="leaf dark" id="specimenDark" aria-hidden="true">
-                            <div class="kicker">Chapter 3</div>
+                            <div class="kicker-mini">Chapter 3</div>
                             <h3>The theory of dark reading</h3>
                             <div class="row" style="width:96%"></div>
                             <div class="row" style="width:88%"></div>
@@ -328,33 +396,50 @@
             </section>
 
             <section class="assure" id="how">
-                <div class="item">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-                    <div><b>Never leaves your device</b><p>Most PDF dark-mode tools upload to a server or need a command line. This one runs entirely in your browser — even with Wi-Fi off.</p></div>
+                <div class="item neo-card">
+                    <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><b>Never leaves your device</b></div>
+                    <p>Most PDF dark-mode tools upload to a server or need a command line. This one runs entirely in your browser &mdash; even with Wi-Fi off.</p>
                 </div>
-                <div class="item">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 8l7-5 7 5"/><circle cx="12" cy="14" r="3"/></svg>
-                    <div><b>Six dark themes</b><p>From pure black to warm sepia. Switch any time — it re-renders instantly.</p></div>
+                <div class="item neo-card">
+                    <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 8l7-5 7 5"/><circle cx="12" cy="14" r="3"/></svg><b>Six dark themes</b></div>
+                    <p>From pure black to warm sepia. Switch any time &mdash; the live preview re-renders instantly.</p>
                 </div>
-                <div class="item">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
-                    <div><b>Open source, MIT</b><p>Auditable single file. Even the fonts and libraries are bundled locally.</p></div>
+                <div class="item neo-card">
+                    <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg><b>Free &amp; open</b></div>
+                    <p>Free forever, no account, no upload &mdash; and one auditable file. <a href="https://github.com/Faiz-k490/DarkPDF" rel="noopener" target="_blank" style="color:var(--amber)">Read the code &#8599;</a></p>
                 </div>
             </section>
 
             <section id="stage">
+                <div id="previewHead">
+                    <div class="meta">
+                        <div class="ttl">&gt; Live Preview</div>
+                        <div id="previewNote">Preview</div>
+                        <div id="previewHint">Looks good? Generate the full dark PDF to download every page.</div>
+                    </div>
+                    <div class="gen-wrap">
+                        <button id="generateBtn" type="button">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:18px;height:18px"><path d="M12 4v12m0 0 5-5m-5 5-5-5"/><path d="M5 20h14"/></svg>
+                            Generate full dark PDF
+                        </button>
+                        <span style="font-size:0.66rem;color:var(--muted)">big files can take a minute</span>
+                    </div>
+                </div>
                 <div id="progressContainer" aria-live="polite">
                     <div class="track"><div id="progressBar"></div></div>
-                    <div id="progressText">0/0</div>
+                    <div id="progressText">0 / 0</div>
                 </div>
-                <button id="downloadBtn" type="button">Download didn’t start? Click here</button>
+                <button id="downloadBtn" type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:18px;height:18px"><path d="M12 4v12m0 0 5-5m-5 5-5-5"/><path d="M5 20h14"/></svg>
+                    Download again
+                </button>
                 <div id="pdfContainer"></div>
             </section>
         </main>
 
         <footer>
-            <span>DarkPDF — convert any PDF to dark mode, offline.</span>
-            <span><a href="https://github.com/Chizkiyahu/pdf-dark-mode-converter" rel="noopener">Source</a> · MIT License</span>
+            <span>DarkPDF &mdash; convert any PDF to dark mode, offline. Built by <a href="/">faizank.me</a>.</span>
+            <span><a href="https://github.com/Faiz-k490/DarkPDF" rel="noopener" target="_blank">Source on GitHub &#8599;</a></span>
         </footer>
     </div>
 
@@ -363,6 +448,10 @@
         let originalPdfData = null;
         let originalFileName = "";
         let currentRenderId = 0;
+
+        // Only render this many pages for the on-screen preview. The full
+        // document is processed lazily when the user clicks "Generate".
+        const PREVIEW_LIMIT = 10;
 
         // Theme definitions: target page-background color (dark). Text is mapped toward white.
         const themes = {
@@ -383,7 +472,6 @@
         const JPEG_QUALITY = 0.82;
 
         // Render resolution multiplier. 3 = sharpest/largest (~216 ppi), 2 ≈ 144 ppi, 1.5 ≈ 108 ppi.
-        // This is the default; the in-app "Quality" control lets the reader change it.
         let RENDER_SCALE = 3;
 
         let pdfLibReadyPromise = null;
@@ -448,6 +536,22 @@
         syncChips();
         applyThemeBackground(themes[themeSelector.value]);
 
+        // Shared dark-mode recolor: brightness-based mapping toward the theme background.
+        function recolorCanvas(ctx, canvas, theme) {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            const bgR = theme.r, bgG = theme.g, bgB = theme.b;
+            for (let j = 0; j < data.length; j += 4) {
+                const r = data[j], g = data[j + 1], b = data[j + 2];
+                const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+                const factor = 1 - (brightness / 255); // 0 = white bg -> theme bg, 1 = black ink -> white
+                data[j]     = bgR + (255 - bgR) * factor;
+                data[j + 1] = bgG + (255 - bgG) * factor;
+                data[j + 2] = bgB + (255 - bgB) * factor;
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+
         function handleFile(file) {
             if (!file || file.type !== 'application/pdf') {
                 alert("Please choose a PDF file.");
@@ -459,10 +563,8 @@
                 const fileData = new Uint8Array(this.result);
                 await ensurePdfLibraries();
                 originalPdfData = fileData;
-                document.getElementById('progressContainer').style.display = 'block';
-                document.getElementById('downloadBtn').style.display = 'none';
                 document.getElementById('stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
-                await renderPDF(fileData);
+                await renderPreview(fileData);
             };
             fileReader.readAsArrayBuffer(file);
         }
@@ -485,14 +587,11 @@
         });
 
         themeSelector.addEventListener('change', async function() {
-            const selectedTheme = themeSelector.value;
-            applyThemeBackground(themes[selectedTheme]);
+            applyThemeBackground(themes[themeSelector.value]);
             syncChips();
             if (originalPdfData) {
                 await ensurePdfLibraries();
-                document.getElementById('progressContainer').style.display = 'block';
-                document.getElementById('downloadBtn').style.display = 'none';
-                await renderPDF(originalPdfData);
+                await renderPreview(originalPdfData);
             }
         });
 
@@ -500,7 +599,7 @@
             loadPdfLibraries().catch(() => {});
         });
 
-        // Quality picker: sets the render scale, re-rendering the current file if one is loaded.
+        // Quality picker: sets the render scale, re-rendering the preview if a file is loaded.
         const qualityEl = document.getElementById('quality');
         qualityEl.addEventListener('click', async function(e) {
             const btn = e.target.closest('.seg-btn');
@@ -509,9 +608,7 @@
             qualityEl.querySelectorAll('.seg-btn').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
             if (originalPdfData) {
                 await ensurePdfLibraries();
-                document.getElementById('progressContainer').style.display = 'block';
-                document.getElementById('downloadBtn').style.display = 'none';
-                await renderPDF(originalPdfData);
+                await renderPreview(originalPdfData);
             }
         });
 
@@ -519,7 +616,6 @@
         (function () {
             const specimen = document.getElementById('specimen');
             const handle = document.getElementById('handle');
-            const dark = document.getElementById('specimenDark');
             const seam = document.getElementById('seam');
             if (!specimen) return;
             let dragging = false;
@@ -543,31 +639,87 @@
             });
         })();
 
-        async function renderPDF(pdfData) {
+        // ---- PREVIEW: render only the first PREVIEW_LIMIT pages on screen ----
+        async function renderPreview(pdfData) {
             const renderId = ++currentRenderId;
-            const selectedTheme = themeSelector.value;
-            const theme = themes[selectedTheme];
+            const theme = themes[themeSelector.value];
             applyThemeBackground(theme);
+            modifiedPdfBytes = null;
 
-            // pdf.js transfers the underlying buffer to its worker, which detaches it.
-            // Clone so the original data stays usable for theme switches / re-renders.
-            const pdf = await pdfjsLib.getDocument({ data: pdfData.slice() }).promise;
-            const progressBar = document.getElementById('progressBar');
-            const progressText = document.getElementById('progressText');
+            const previewHead = document.getElementById('previewHead');
+            const generateBtn = document.getElementById('generateBtn');
             const pdfContainer = document.getElementById('pdfContainer');
             const progressContainer = document.getElementById('progressContainer');
-            modifiedPdfBytes = null;
-            progressBar.style.width = '0';
-            progressText.innerText = `0/${pdf.numPages}`;
+            const downloadBtn = document.getElementById('downloadBtn');
+
+            progressContainer.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            generateBtn.style.display = 'none';
+            previewHead.style.display = 'flex';
+            document.getElementById('previewNote').textContent = 'Rendering preview…';
             pdfContainer.innerHTML = '';
+
+            const pdf = await pdfjsLib.getDocument({ data: pdfData.slice() }).promise;
+            if (renderId !== currentRenderId) return;
+            const totalPages = pdf.numPages;
+            const limit = Math.min(PREVIEW_LIMIT, totalPages);
+
+            for (let i = 0; i < limit; i++) {
+                if (renderId !== currentRenderId) return;
+                const page = await pdf.getPage(i + 1);
+                const viewport = page.getViewport({ scale: RENDER_SCALE });
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                if (renderId !== currentRenderId) return;
+                recolorCanvas(ctx, canvas, theme);
+                pdfContainer.appendChild(canvas);
+                page.cleanup();
+            }
+
+            if (renderId !== currentRenderId) return;
+            document.getElementById('previewNote').textContent =
+                totalPages > limit
+                    ? `Preview — first ${limit} of ${totalPages} pages`
+                    : `Preview — all ${totalPages} page${totalPages > 1 ? 's' : ''}`;
+            generateBtn.disabled = false;
+            generateBtn.style.display = 'inline-flex';
+        }
+
+        // ---- FULL RENDER: process every page, build the merged PDF, download ----
+        async function generateFullPdf() {
+            if (!originalPdfData) return;
+            await ensurePdfLibraries();
+
+            const renderId = ++currentRenderId;
+            const theme = themes[themeSelector.value];
+            applyThemeBackground(theme);
+
+            const generateBtn = document.getElementById('generateBtn');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const progressContainer = document.getElementById('progressContainer');
+            const downloadBtn = document.getElementById('downloadBtn');
+
+            generateBtn.disabled = true;
+            generateBtn.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0';
+            modifiedPdfBytes = null;
+
+            const pdf = await pdfjsLib.getDocument({ data: originalPdfData.slice() }).promise;
+            if (renderId !== currentRenderId) return;
+            const totalPages = pdf.numPages;
+            progressText.textContent = `0 / ${totalPages} pages`;
 
             const CHUNK_SIZE = 50; // Process pages in chunks to cap memory use.
             const chunks = [];
-            const totalPages = pdf.numPages;
 
             for (let chunkStart = 0; chunkStart < totalPages; chunkStart += CHUNK_SIZE) {
                 if (renderId !== currentRenderId) return;
-
                 const chunkDoc = await PDFLib.PDFDocument.create();
                 const chunkEnd = Math.min(chunkStart + CHUNK_SIZE, totalPages);
 
@@ -576,7 +728,7 @@
 
                     const percent = ((i + 1) / totalPages) * 100;
                     progressBar.style.width = `${percent}%`;
-                    progressText.innerText = `${i + 1} / ${totalPages} pages`;
+                    progressText.textContent = `${i + 1} / ${totalPages} pages`;
 
                     const page = await pdf.getPage(i + 1);
                     const viewport = page.getViewport({ scale: RENDER_SCALE });
@@ -587,29 +739,9 @@
 
                     await page.render({ canvasContext: ctx, viewport: viewport }).promise;
                     if (renderId !== currentRenderId) return;
-
-                    // Apply dark-mode recolor: brightness-based mapping.
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const data = imageData.data;
-                    const bgR = theme.r, bgG = theme.g, bgB = theme.b;
-
-                    for (let j = 0; j < data.length; j += 4) {
-                        const r = data[j], g = data[j + 1], b = data[j + 2];
-                        const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-                        const factor = 1 - (brightness / 255); // 0 = white bg -> theme bg, 1 = black ink -> white
-                        data[j]     = bgR + (255 - bgR) * factor;
-                        data[j + 1] = bgG + (255 - bgG) * factor;
-                        data[j + 2] = bgB + (255 - bgB) * factor;
-                    }
-                    ctx.putImageData(imageData, 0, 0);
+                    recolorCanvas(ctx, canvas, theme);
                     if (renderId !== currentRenderId) return;
 
-                    // Preview the first 20 pages only.
-                    if (i < 20) {
-                        pdfContainer.appendChild(canvas);
-                    }
-
-                    // JPEG keeps output small — important for long ebooks.
                     const imgBytes = await new Promise(resolve =>
                         canvas.toBlob(blob => blob.arrayBuffer().then(resolve), 'image/jpeg', JPEG_QUALITY));
                     if (renderId !== currentRenderId) return;
@@ -618,11 +750,8 @@
                     const newPage = chunkDoc.addPage([viewport.width, viewport.height]);
                     newPage.drawImage(jpgImage, { x: 0, y: 0, width: viewport.width, height: viewport.height });
 
-                    // Free off-screen canvases to help GC.
-                    if (i >= 20) {
-                        canvas.width = 1;
-                        canvas.height = 1;
-                    }
+                    canvas.width = 1;
+                    canvas.height = 1;
                     page.cleanup();
                 }
 
@@ -632,7 +761,7 @@
             }
 
             if (renderId !== currentRenderId) return;
-            progressText.innerText = "Merging pages… this may take a moment.";
+            progressText.textContent = "Merging pages… this may take a moment.";
 
             const finalPdfDoc = await PDFLib.PDFDocument.create();
             for (let i = 0; i < chunks.length; i++) {
@@ -643,7 +772,7 @@
                 chunks[i] = null;
             }
 
-            progressText.innerText = "Finalizing…";
+            progressText.textContent = "Finalizing…";
             modifiedPdfBytes = await finalPdfDoc.save();
             if (renderId !== currentRenderId) return;
 
@@ -663,9 +792,10 @@
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(link.href);
-            document.getElementById('downloadBtn').style.display = 'block';
+            document.getElementById('downloadBtn').style.display = 'inline-flex';
         }
 
+        document.getElementById('generateBtn').addEventListener('click', generateFullPdf);
         document.getElementById('downloadBtn').addEventListener('click', triggerDownload);
     </script>
 </body>
