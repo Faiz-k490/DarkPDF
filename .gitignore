@@ -1,0 +1,18 @@
+# Generated dark-mode PDFs
+*_dark.pdf
+*_classic_dark.pdf
+
+# macOS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Node (only if you add tooling later)
+node_modules/
+
+# Misc
+*.log
+.cache/
