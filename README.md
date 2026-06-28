@@ -3,6 +3,10 @@
 Convert any PDF into a dark-mode version, **100% offline, right in your browser**. Your file
 never leaves your device — no uploads, no servers, no internet required.
 
+Most open-source PDF dark-mode tools either send your file to a server or need a command-line
+toolchain (Python, Ghostscript, ImageMagick…) to run. DarkPDF does the entire job **locally in a
+single HTML file** — open it and go.
+
 Great for reading ebooks, papers, and textbooks at night without burning your eyes on a white page.
 
 > 🔒 **Private by design.** All rendering happens locally via bundled copies of
@@ -17,6 +21,7 @@ Great for reading ebooks, papers, and textbooks at night without burning your ey
 - **Multiple themes** — Pure Black (default), Claude Warm, ChatGPT Cool, Sepia, Midnight Blue, Forest Green.
 - **Works on any PDF** — scanned, vector, or complex layouts (each page is recolored as an image).
 - **Tuned for ebooks** — pages are embedded as JPEG to keep output files reasonably small.
+- **Quality picker** — choose Compact / Balanced / Sharpest to trade detail against file size.
 - **Live preview** — see the first 20 pages as they convert.
 - **Drag & drop** or file picker.
 
@@ -40,22 +45,23 @@ python3 -m http.server 8000
 
 ## Configuration
 
-Two constants at the top of the `<script>` in `index.html` control quality vs. file size:
+The **Quality** control in the app sets the render resolution per conversion — pick
+**Compact**, **Balanced**, or **Sharpest** depending on how a particular file comes out:
+
+| Quality           | `RENDER_SCALE` | Approx. PPI | Full output\* | Best for |
+| ----------------- | -------------- | ----------- | ------------- | -------- |
+| Compact           | 1.5            | ~108        | ~53 MB        | Phones / tablets, lightest files |
+| Balanced          | 2              | ~144        | ~81 MB        | Most reading |
+| Sharpest (default)| 3              | ~216        | ~151 MB       | Maximum sharpness |
+
+\* For a 482-page textbook (~11 MB source).
+
+To change the defaults, edit two constants at the top of the `<script>` in `index.html`:
 
 ```js
 const JPEG_QUALITY = 0.82;   // 0–1. Lower = smaller files.
-const RENDER_SCALE = 3;      // Resolution multiplier.
+let   RENDER_SCALE = 3;      // Default resolution; the Quality picker overrides it at runtime.
 ```
-
-Rough size guide for a 482-page textbook (~11 MB source):
-
-| `RENDER_SCALE` | Approx. PPI | Full output | Best for |
-| -------------- | ----------- | ----------- | -------- |
-| 1.5            | ~108        | ~53 MB      | Phones / tablets, lightest files |
-| 2              | ~144        | ~81 MB      | Balanced clarity for most reading |
-| 3 (default)    | ~216        | ~151 MB     | Maximum sharpness |
-
-If a big ebook produces too large a file, drop `RENDER_SCALE` to `2` and reload the page.
 
 ## How it works
 

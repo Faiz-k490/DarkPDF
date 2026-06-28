@@ -140,6 +140,23 @@
         .chip:focus-visible { outline: 2px solid var(--lamp-2); outline-offset: 2px; }
         .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
+        /* ---- quality segmented control ---- */
+        .quality { margin-top: 26px; }
+        .quality .hint { color: var(--muted); text-transform: none; letter-spacing: 0; }
+        .seg { display: inline-flex; max-width: 100%; background: var(--ink-2); border: 1px solid var(--line-2); border-radius: 12px; padding: 4px; gap: 4px; }
+        .seg-btn {
+            display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+            padding: 9px 16px; border-radius: 9px; cursor: pointer; border: 0;
+            background: transparent; color: var(--paper-2); text-align: left; font-family: var(--sans);
+            transition: background 0.15s, color 0.15s;
+        }
+        .seg-btn b { font-weight: 600; font-size: 0.86rem; }
+        .seg-btn span { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); white-space: nowrap; }
+        .seg-btn:hover { color: var(--paper); }
+        .seg-btn[aria-pressed="true"] { background: var(--lamp); color: #211606; }
+        .seg-btn[aria-pressed="true"] span { color: rgba(33, 22, 6, 0.7); }
+        .seg-btn:focus-visible { outline: 2px solid var(--lamp-2); outline-offset: 2px; }
+
         /* ---- signature: before/after specimen ---- */
         .specimen {
             position: relative; width: 100%; aspect-ratio: 5 / 6;
@@ -220,6 +237,8 @@
             .topbar nav { gap: 14px; }
             .actions { width: 100%; }
             .btn-primary { width: 100%; justify-content: center; }
+            .seg { width: 100%; }
+            .seg-btn { flex: 1; align-items: center; text-align: center; padding: 9px 8px; }
         }
         @media (prefers-reduced-motion: reduce) {
             * { transition: none !important; }
@@ -264,6 +283,15 @@
                             <option value="forest">Forest Green</option>
                         </select>
                     </div>
+
+                    <div class="quality">
+                        <div class="label">Quality <span class="hint">— detail vs. file size</span></div>
+                        <div class="seg" id="quality" role="group" aria-label="Render quality">
+                            <button type="button" class="seg-btn" data-scale="1.5"><b>Compact</b><span>~108 ppi · small</span></button>
+                            <button type="button" class="seg-btn" data-scale="2"><b>Balanced</b><span>~144 ppi</span></button>
+                            <button type="button" class="seg-btn" data-scale="3" aria-pressed="true"><b>Sharpest</b><span>~216 ppi · default</span></button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="hero-demo">
@@ -301,7 +329,7 @@
             <section class="assure" id="how">
                 <div class="item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-                    <div><b>Nothing is uploaded</b><p>Conversion runs entirely on your machine. Works with Wi-Fi off.</p></div>
+                    <div><b>Never leaves your device</b><p>Most PDF dark-mode tools upload to a server or need a command line. This one runs entirely in your browser — even with Wi-Fi off.</p></div>
                 </div>
                 <div class="item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 8l7-5 7 5"/><circle cx="12" cy="14" r="3"/></svg>
@@ -354,8 +382,8 @@
         const JPEG_QUALITY = 0.82;
 
         // Render resolution multiplier. 3 = sharpest/largest (~216 ppi), 2 ≈ 144 ppi, 1.5 ≈ 108 ppi.
-        // Lower this if a big ebook produces too large a file.
-        const RENDER_SCALE = 3;
+        // This is the default; the in-app "Quality" control lets the reader change it.
+        let RENDER_SCALE = 3;
 
         let pdfLibReadyPromise = null;
 
@@ -469,6 +497,21 @@
 
         document.querySelector('.btn-primary').addEventListener('click', () => {
             loadPdfLibraries().catch(() => {});
+        });
+
+        // Quality picker: sets the render scale, re-rendering the current file if one is loaded.
+        const qualityEl = document.getElementById('quality');
+        qualityEl.addEventListener('click', async function(e) {
+            const btn = e.target.closest('.seg-btn');
+            if (!btn) return;
+            RENDER_SCALE = parseFloat(btn.dataset.scale);
+            qualityEl.querySelectorAll('.seg-btn').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
+            if (originalPdfData) {
+                await ensurePdfLibraries();
+                document.getElementById('progressContainer').style.display = 'block';
+                document.getElementById('downloadBtn').style.display = 'none';
+                await renderPDF(originalPdfData);
+            }
         });
 
         /* ---- hero before/after slider ---- */
