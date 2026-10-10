@@ -746,8 +746,10 @@
                     if (renderId !== currentRenderId) return;
 
                     const jpgImage = await chunkDoc.embedJpg(imgBytes);
-                    const newPage = chunkDoc.addPage([viewport.width, viewport.height]);
-                    newPage.drawImage(jpgImage, { x: 0, y: 0, width: viewport.width, height: viewport.height });
+                    // Raster resolution changes quality, not the page size in PDF points.
+                    const pageSize = page.getViewport({ scale: 1 });
+                    const newPage = chunkDoc.addPage([pageSize.width, pageSize.height]);
+                    newPage.drawImage(jpgImage, { x: 0, y: 0, width: pageSize.width, height: pageSize.height });
 
                     canvas.width = 1;
                     canvas.height = 1;
