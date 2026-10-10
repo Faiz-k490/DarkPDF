@@ -14,6 +14,13 @@ There's no build step. Edit `index.html` and reload in your browser.
 Please test changes against a few real PDFs — at minimum a text-heavy document and one with
 images/figures — before opening a PR.
 
+For export geometry, serve the repository locally and open
+`http://localhost:8000/tests/export-geometry.html`. It generates text-heavy and image PDFs,
+including a rotated page, and checks the actual exports at every quality setting. The
+result should show `"ok": true` for all nine page checks. Raster resolution must change
+with quality while PDF page dimensions stay fixed. The check uses the vendored libraries
+and does not contact external services.
+
 ## Guidelines
 
 - Keep it **dependency-free at runtime**. The whole point is offline, no-tracking, no-build.

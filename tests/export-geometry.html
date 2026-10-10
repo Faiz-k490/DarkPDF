@@ -1,0 +1,116 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>DarkPDF export geometry regression</title>
+<h1>Export geometry regression</h1>
+<p>Uses real PDF rendering and the vendored libraries. No external requests.</p>
+<pre id="results">Running…</pre>
+<script src="../vendor/pdf-lib.min.js"></script>
+<iframe id="app" src="../index.html" title="DarkPDF under test"
+        style="width: 900px; height: 600px;"></iframe>
+<script>
+const results = document.getElementById('results');
+window.testResults = { done: false, checks: [] };
+
+function waitFor(predicate) {
+    const deadline = Date.now() + 30000;
+    return new Promise((resolve, reject) => {
+        function poll() {
+            if (predicate()) return resolve();
+            if (Date.now() >= deadline) return reject(new Error('Preview timed out'));
+            setTimeout(poll, 20);
+        }
+        poll();
+    });
+}
+
+document.getElementById('app').addEventListener('load', async function () {
+    try {
+        const app = this.contentWindow;
+        await app.ensurePdfLibraries();
+        const { PDFDocument, StandardFonts, degrees } = PDFLib;
+        let downloaded = null;
+        let rendered = [];
+        let previewPromise = null;
+        const renderPreview = app.renderPreview;
+        app.renderPreview = function (...args) {
+            previewPromise = renderPreview.apply(this, args);
+            return previewPromise;
+        };
+        async function previewAfter(action) {
+            const previous = previewPromise;
+            action();
+            await waitFor(() => previewPromise !== previous);
+            await previewPromise;
+        }
+        const createObjectURL = app.URL.createObjectURL.bind(app.URL);
+        app.URL.createObjectURL = blob => {
+            if (blob.type === 'application/pdf') downloaded = blob;
+            return createObjectURL(blob);
+        };
+        app.HTMLAnchorElement.prototype.click = function () {}; // Capture, do not download.
+        const toBlob = app.HTMLCanvasElement.prototype.toBlob;
+        app.HTMLCanvasElement.prototype.toBlob = function (...args) {
+            rendered.push([this.width, this.height]);
+            return toBlob.apply(this, args);
+        };
+
+        const textDoc = await PDFDocument.create();
+        const font = await textDoc.embedFont(StandardFonts.Helvetica);
+        const textPage = textDoc.addPage([612, 792]);
+        for (let line = 0; line < 42; line++) {
+            textPage.drawText(`Line ${line + 1}: exported page size must stay independent of quality.`,
+                { x: 30, y: 755 - line * 17, size: 10, font });
+        }
+
+        const imageDoc = await PDFDocument.create();
+        const figure = document.createElement('canvas');
+        figure.width = 180; figure.height = 120;
+        const context = figure.getContext('2d');
+        context.fillStyle = '#f0f0f0'; context.fillRect(0, 0, 180, 120);
+        for (let x = 0; x < 180; x += 12) {
+            context.fillStyle = x % 24 === 0 ? '#2060b0' : '#d05020';
+            context.fillRect(x, 10, 6, 100);
+        }
+        const png = await imageDoc.embedPng(figure.toDataURL('image/png'));
+        for (const rotation of [0, 90]) {
+            const page = imageDoc.addPage([360, 240]);
+            page.drawImage(png, { x: 0, y: 0, width: 360, height: 240 });
+            page.setRotation(degrees(rotation));
+        }
+
+        const fixtures = [
+            { name: 'text.pdf', bytes: await textDoc.save(), sizes: [[612, 792]] },
+            { name: 'images.pdf', bytes: await imageDoc.save(), sizes: [[360, 240], [240, 360]] }
+        ];
+        for (const fixture of fixtures) {
+            await previewAfter(() => app.handleFile(
+                new app.File([fixture.bytes], fixture.name, { type: 'application/pdf' })));
+            for (const scale of [1.5, 2, 3]) {
+                await previewAfter(() => app.document.querySelector(`[data-scale="${scale}"]`).click());
+                downloaded = null;
+                rendered = [];
+                await app.generateFullPdf();
+                if (!downloaded) throw new Error('Export did not produce a PDF');
+                const output = await PDFDocument.load(new Uint8Array(await downloaded.arrayBuffer()));
+                if (output.getPageCount() !== fixture.sizes.length) throw new Error('Page count changed');
+                output.getPages().forEach((page, index) => {
+                    const expected = fixture.sizes[index];
+                    const actual = [page.getWidth(), page.getHeight()];
+                    const raster = rendered[index];
+                    const ok = actual.every((value, axis) => Math.abs(value - expected[axis]) < 0.01)
+                        && raster.every((value, axis) => value === expected[axis] * scale);
+                    window.testResults.checks.push({ fixture: fixture.name, scale, page: index + 1,
+                        expected, actual, raster, ok });
+                });
+            }
+        }
+        window.testResults.ok = window.testResults.checks.every(check => check.ok);
+    } catch (error) {
+        window.testResults.ok = false;
+        window.testResults.error = `${error}\n${error.stack || ''}`;
+    } finally {
+        window.testResults.done = true;
+        results.textContent = JSON.stringify(window.testResults, null, 2);
+    }
+});
+</script>
